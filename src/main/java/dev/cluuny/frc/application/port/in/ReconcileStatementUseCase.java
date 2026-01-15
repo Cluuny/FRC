@@ -1,7 +1,7 @@
-package dev.cluuny.rfc.application.port.in;
+package dev.cluuny.frc.application.port.in;
 
-import dev.cluuny.rfc.domain.model.BankStatementLine;
-import dev.cluuny.rfc.domain.model.ReconciliationReport;
+import dev.cluuny.frc.domain.model.BankStatementLine;
+import dev.cluuny.frc.domain.model.ReconciliationReport;
 
 import java.util.List;
 

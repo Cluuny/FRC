@@ -1,9 +1,9 @@
-package dev.cluuny.rfc.domain.service;
+package dev.cluuny.frc.domain.service;
 
-import dev.cluuny.rfc.domain.model.BankStatementLine;
-import dev.cluuny.rfc.domain.model.ReconciliationResult;
-import dev.cluuny.rfc.domain.model.ReconciliationStatus;
-import dev.cluuny.rfc.domain.model.Transaction;
+import dev.cluuny.frc.domain.model.BankStatementLine;
+import dev.cluuny.frc.domain.model.ReconciliationResult;
+import dev.cluuny.frc.domain.model.ReconciliationStatus;
+import dev.cluuny.frc.domain.model.Transaction;
 
 import java.time.Duration;
 import java.util.ArrayList;

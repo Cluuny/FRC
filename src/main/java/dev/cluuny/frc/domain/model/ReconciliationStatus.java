@@ -1,4 +1,4 @@
-package dev.cluuny.rfc.domain.model;
+package dev.cluuny.frc.domain.model;
 
 public enum ReconciliationStatus {
     MATCHED,
