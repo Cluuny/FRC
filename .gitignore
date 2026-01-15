@@ -1,6 +1,6 @@
 HELP.md
 target/
-.mvn/
+!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -12,12 +12,14 @@ target/
 .settings
 .springBeans
 .sts4-cache
+bin/
 
 ### IntelliJ IDEA ###
 .idea
 *.iws
 *.iml
 *.ipr
+out/
 
 ### NetBeans ###
 /nbproject/private/
@@ -32,13 +34,19 @@ build/
 ### VS Code ###
 .vscode/
 
-### Enviroment ###
-.env
-.env.local
-.env.*.local
-.env.test.local
-.env.production.local
-.env.development.local
-.env.staging.local
-.env.production
+### OS Specific ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
+### Logs ###
+*.log
+
+### Environment Variables ###
+.env
+.env.*
+!.env.example
