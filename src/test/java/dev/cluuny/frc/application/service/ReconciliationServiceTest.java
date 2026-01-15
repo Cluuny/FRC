@@ -1,0 +1,56 @@
+package dev.cluuny.frc.application.service;
+
+import dev.cluuny.frc.application.port.out.ReconciliationReportRepositoryPort;
+import dev.cluuny.frc.application.port.out.TransactionRepositoryPort;
+import dev.cluuny.frc.domain.model.BankStatementLine;
+import dev.cluuny.frc.domain.model.ReconciliationReport;
+import dev.cluuny.frc.domain.model.ReconciliationStatus;
+import dev.cluuny.frc.domain.model.Transaction;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class ReconciliationServiceTest {
+
+    private TransactionRepositoryPort transactionRepository;
+    private ReconciliationReportRepositoryPort reportRepository;
+    private ReconciliationService service;
+
+    @BeforeEach
+    void setUp() {
+        transactionRepository = Mockito.mock(TransactionRepositoryPort.class);
+        reportRepository = Mockito.mock(ReconciliationReportRepositoryPort.class);
+        service = new ReconciliationService(transactionRepository, reportRepository);
+    }
+
+    @Test
+    void shouldReconcileAndSaveReport() {
+        // Given
+        LocalDateTime now = LocalDateTime.now();
+        Transaction t1 = new Transaction("REF1", new BigDecimal("100.00"), now);
+        when(transactionRepository.findAll()).thenReturn(List.of(t1));
+
+        BankStatementLine b1 = new BankStatementLine("REF1", new BigDecimal("100.00"), now);
+        List<BankStatementLine> statementLines = List.of(b1);
+
+        // When
+        ReconciliationReport report = service.reconcile(statementLines);
+
+        // Then
+        assertEquals(1, report.getResults().size());
+        assertEquals(ReconciliationStatus.MATCHED, report.getResults().get(0).getStatus());
+
+        ArgumentCaptor<ReconciliationReport> reportCaptor = ArgumentCaptor.forClass(ReconciliationReport.class);
+        verify(reportRepository).save(reportCaptor.capture());
+        assertEquals(1, reportCaptor.getValue().getResults().size());
+    }
+}
