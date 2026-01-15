@@ -1,6 +1,6 @@
-# RFC
+# FRC (Fintech Reconciliation Core)
 
-Proyecto Spring Boot para reconciliación (RFC).
+Proyecto Spring Boot para reconciliación de movimientos bancarios (RFC).
 
 ## Resumen
 
