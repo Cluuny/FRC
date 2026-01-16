@@ -29,7 +29,7 @@ public class ReconciliationService implements ReconcileStatementUseCase {
         this.transactionRepository = transactionRepository;
         this.reportRepository = reportRepository;
         // Tolerance could be injected from configuration
-        this.matcher = new ReconciliationMatcher(60); // 60 seconds tolerance
+        this.matcher = new ReconciliationMatcher(60, 2);
     }
 
     @Override
