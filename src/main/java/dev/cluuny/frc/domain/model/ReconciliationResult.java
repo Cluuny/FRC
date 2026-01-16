@@ -1,25 +1,16 @@
 package dev.cluuny.frc.domain.model;
 
+import lombok.Getter;
+
+@Getter
 public class ReconciliationResult {
-    private Transaction transaction;
-    private BankStatementLine bankStatementLine;
-    private ReconciliationStatus status;
+    private final Transaction transaction;
+    private final BankStatementLine bankStatementLine;
+    private final ReconciliationStatus status;
 
     public ReconciliationResult(Transaction transaction, BankStatementLine bankStatementLine, ReconciliationStatus status) {
         this.transaction = transaction;
         this.bankStatementLine = bankStatementLine;
         this.status = status;
-    }
-
-    public Transaction getTransaction() {
-        return transaction;
-    }
-
-    public BankStatementLine getBankStatementLine() {
-        return bankStatementLine;
-    }
-
-    public ReconciliationStatus getStatus() {
-        return status;
     }
 }

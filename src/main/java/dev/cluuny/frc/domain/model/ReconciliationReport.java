@@ -1,15 +1,14 @@
 package dev.cluuny.frc.domain.model;
 
+import lombok.Getter;
+
 import java.util.List;
 
+@Getter
 public class ReconciliationReport {
-    private List<ReconciliationResult> results;
+    private final List<ReconciliationResult> results;
 
     public ReconciliationReport(List<ReconciliationResult> results) {
         this.results = results;
-    }
-
-    public List<ReconciliationResult> getResults() {
-        return results;
     }
 }
