@@ -27,30 +27,47 @@ class ReconciliationServiceTest {
 
     @BeforeEach
     void setUp() {
-        transactionRepository = Mockito.mock(TransactionRepositoryPort.class);
-        reportRepository = Mockito.mock(ReconciliationReportRepositoryPort.class);
-        service = new ReconciliationService(transactionRepository, reportRepository);
+        transactionRepository =
+                Mockito.mock(TransactionRepositoryPort.class);
+        reportRepository =
+                Mockito.mock(ReconciliationReportRepositoryPort.class);
+
+        service = new ReconciliationService(
+                transactionRepository,
+                reportRepository
+        );
     }
 
     @Test
     void shouldReconcileAndSaveReport() {
-        // Given
         LocalDateTime now = LocalDateTime.now();
-        Transaction t1 = new Transaction("REF1", new BigDecimal("100.00"), now);
-        when(transactionRepository.findAll()).thenReturn(List.of(t1));
 
-        BankStatementLine b1 = new BankStatementLine("REF1", new BigDecimal("100.00"), now);
-        List<BankStatementLine> statementLines = List.of(b1);
+        Transaction t1 =
+                new Transaction("REF1", new BigDecimal("100.00"), now);
+        when(transactionRepository.findAll())
+                .thenReturn(List.of(t1));
 
-        // When
-        ReconciliationReport report = service.reconcile(statementLines);
+        BankStatementLine b1 =
+                new BankStatementLine("REF1", new BigDecimal("100.00"), now);
 
-        // Then
+        ReconciliationReport report =
+                service.reconcile(List.of(b1));
+
         assertEquals(1, report.getResults().size());
-        assertEquals(ReconciliationStatus.MATCHED, report.getResults().get(0).getStatus());
 
-        ArgumentCaptor<ReconciliationReport> reportCaptor = ArgumentCaptor.forClass(ReconciliationReport.class);
-        verify(reportRepository).save(reportCaptor.capture());
-        assertEquals(1, reportCaptor.getValue().getResults().size());
+        assertEquals(
+                ReconciliationStatus.RECONCILED_EXACT,
+                report.getResults().get(0).getStatus()
+        );
+
+        ArgumentCaptor<ReconciliationReport> captor =
+                ArgumentCaptor.forClass(ReconciliationReport.class);
+
+        verify(reportRepository).save(captor.capture());
+
+        assertEquals(
+                1,
+                captor.getValue().getResults().size()
+        );
     }
 }
