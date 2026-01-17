@@ -1,9 +1,7 @@
 package dev.cluuny.frc.domain.service;
 
-import dev.cluuny.frc.domain.model.BankStatementLine;
-import dev.cluuny.frc.domain.model.ReconciliationResult;
-import dev.cluuny.frc.domain.model.ReconciliationStatus;
-import dev.cluuny.frc.domain.model.Transaction;
+import dev.cluuny.frc.domain.exception.InvalidTransactionDataException;
+import dev.cluuny.frc.domain.model.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -12,48 +10,66 @@ import java.util.Optional;
 
 public class ReconciliationMatcher {
 
-    private final long dateToleranceSeconds;
-    private final int dateToleranceDays;
+    private final ReconciliationPolicy policy;
 
-    public ReconciliationMatcher(long dateToleranceSeconds, int dateToleranceDays) {
-        this.dateToleranceSeconds = dateToleranceSeconds;
-        this.dateToleranceDays = dateToleranceDays;
+    public ReconciliationMatcher(ReconciliationPolicy policy) {
+        this.policy = policy;
     }
 
     private long secondsDiff(Transaction t, BankStatementLine b) {
+        if (t.getDate() == null || b.getDate() == null) {
+            throw new InvalidTransactionDataException("Transaction or Bank Statement Line date cannot be null");
+        }
         return Math.abs(Duration.between(t.getDate(), b.getDate()).getSeconds());
     }
 
     private boolean withinSecondsTolerance(Transaction t, BankStatementLine b) {
-        return secondsDiff(t, b) <= dateToleranceSeconds;
+        return secondsDiff(t, b) <= policy.getExactTolerance().getSeconds();
     }
 
     private boolean withinDaysTolerance(Transaction t, BankStatementLine b) {
         long days = secondsDiff(t, b) / (24 * 60 * 60);
-        return days <= dateToleranceDays;
+        return days <= policy.getMaxDayTolerance();
     }
 
     private List<Transaction> findByReference(
             List<Transaction> internals,
             BankStatementLine bank) {
 
+        if (bank.getReferenceId() == null) {
+            return List.of(); // Or throw an exception depending on business rule
+        }
+
         return internals.stream()
-                .filter(t -> t.getReferenceId().equals(bank.getReferenceId()))
+                .filter(t -> t.getReferenceId() != null && t.getReferenceId().equals(bank.getReferenceId()))
                 .toList();
     }
 
     private List<Transaction> findByAmount(
             List<Transaction> internals,
             BankStatementLine bank) {
+        
+        if (bank.getAmount() == null) {
+             throw new InvalidTransactionDataException("Bank Statement Line amount cannot be null");
+        }
 
         return internals.stream()
-                .filter(t -> t.getAmount().compareTo(bank.getAmount()) == 0)
+                .filter(t -> {
+                    if (t.getAmount() == null) {
+                        throw new InvalidTransactionDataException("Internal Transaction amount cannot be null for transaction ID: " + t.getReferenceId());
+                    }
+                    return t.getAmount().compareTo(bank.getAmount()) == 0;
+                })
                 .toList();
     }
 
     private Optional<ReconciliationResult> tryReferenceMatch(
             Transaction internal,
             BankStatementLine bank) {
+
+        if (internal.getAmount() == null || bank.getAmount() == null) {
+             throw new InvalidTransactionDataException("Amounts cannot be null for comparison");
+        }
 
         if (internal.getAmount().compareTo(bank.getAmount()) != 0) {
             return Optional.of(new ReconciliationResult(
@@ -87,14 +103,20 @@ public class ReconciliationMatcher {
     }
 
     /**
-     * Reconcilia transacciones internas con registros del Banco
+     *
      */
     public List<ReconciliationResult> reconcile(
             List<Transaction> internalTransactions,
             List<BankStatementLine> bankStatementLines) {
 
+        // Se verifica que la lista bancaria no sea nula o esté vacía
+        if (internalTransactions == null || internalTransactions.isEmpty()) {
+             throw new InvalidTransactionDataException("Internal transactions list cannot be null or empty");
+        }
+
         List<ReconciliationResult> results = new ArrayList<>();
 
+        // Copias manipulables
         List<Transaction> unmatchedInternal = new ArrayList<>(internalTransactions);
         List<BankStatementLine> unmatchedBank = new ArrayList<>(bankStatementLines);
 
@@ -112,7 +134,7 @@ public class ReconciliationMatcher {
                 if (refMatches.size() > 1) {
                     results.add(new ReconciliationResult(
                             null, bankLine, ReconciliationStatus.AMBIGUOUS_MATCH));
-                    // Marcamos como procesado en el banco para no reportarlo como missing
+                    // Se marca como procesado en el banco para no reportarlo como missing
                     unmatchedInternal.removeAll(refMatches);
                     unmatchedBank.remove(bankLine);
                     continue;
@@ -126,7 +148,7 @@ public class ReconciliationMatcher {
                 if (result.isPresent()) {
                     results.add(result.get());
                     // Si hubo match por referencia (incluso con mismatch de monto o fecha),
-                    // consideramos ambas partes como "procesadas" para este matcher.
+                    // se consideran ambas partes como "procesadas" para este matcher.
                     unmatchedInternal.remove(internal);
                     unmatchedBank.remove(bankLine);
                 }
@@ -155,19 +177,14 @@ public class ReconciliationMatcher {
                 if (fallback.isPresent()) {
                     results.add(fallback.get());
                     // Si es POTENTIAL_MATCH, decidimos si quitarlo o no.
-                    // Generalmente si ya se reportó como match potencial, no queremos que salga como missing.
                     unmatchedInternal.remove(internal);
                     unmatchedBank.remove(bankLine);
-                    continue;
                 }
             }
             
-            // Si llegamos aquí, no hubo match por referencia ni por monto (o el fallback falló).
-            // NO agregamos UNMATCHED aquí explícitamente si queremos que se reporte como MISSING_IN_INTERNAL al final.
-            // O bien, si agregamos UNMATCHED, debemos quitarlo de unmatchedBank.
-            // La lógica original agregaba UNMATCHED y luego MISSING_IN_INTERNAL.
-            // Para cumplir con el test shouldDetectMissingInInternal (que espera 1 solo resultado),
-            // dejaremos que el bucle final se encargue de reportarlo como MISSING_IN_INTERNAL.
+            // Si se llega a este punto, no hubo match por referencia ni por monto (o el fallback falló).
+            // No se agrega UNMATCHED de forma explicita para agregar MISSING_IN_BANK o MISSING_IN_INTERNAL
+            // Y de esta forma que se pase a una tentativa revision manual
         }
 
         for (Transaction internal : unmatchedInternal) {

@@ -3,10 +3,9 @@ package dev.cluuny.frc.application.service;
 import dev.cluuny.frc.application.port.in.ReconcileStatementUseCase;
 import dev.cluuny.frc.application.port.out.ReconciliationReportRepositoryPort;
 import dev.cluuny.frc.application.port.out.TransactionRepositoryPort;
-import dev.cluuny.frc.domain.model.BankStatementLine;
-import dev.cluuny.frc.domain.model.ReconciliationReport;
-import dev.cluuny.frc.domain.model.ReconciliationResult;
-import dev.cluuny.frc.domain.model.Transaction;
+import dev.cluuny.frc.domain.exception.EmptyStatementException;
+import dev.cluuny.frc.domain.exception.ReportStorageException;
+import dev.cluuny.frc.domain.model.*;
 import dev.cluuny.frc.domain.service.ReconciliationMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,17 +23,20 @@ public class ReconciliationService implements ReconcileStatementUseCase {
     private final ReconciliationReportRepositoryPort reportRepository;
     private final ReconciliationMatcher matcher;
 
-    public ReconciliationService(TransactionRepositoryPort transactionRepository,
+    public ReconciliationService(ReconciliationPolicy policy, TransactionRepositoryPort transactionRepository,
                                  ReconciliationReportRepositoryPort reportRepository) {
         this.transactionRepository = transactionRepository;
         this.reportRepository = reportRepository;
-        // Tolerance could be injected from configuration
-        this.matcher = new ReconciliationMatcher(60, 2);
+        this.matcher = new ReconciliationMatcher(policy);
     }
 
     @Override
     @Transactional
     public ReconciliationReport reconcile(List<BankStatementLine> statementLines) {
+        if (statementLines == null || statementLines.isEmpty()) {
+            throw new EmptyStatementException("Bank statement lines cannot be null or empty");
+        }
+
         logger.info("Starting reconciliation for {} statement lines", statementLines.size());
         
         List<Transaction> internalTransactions = transactionRepository.findAll();
@@ -44,7 +46,11 @@ public class ReconciliationService implements ReconcileStatementUseCase {
         logger.info("Reconciliation completed with {} results", results.size());
         
         ReconciliationReport report = new ReconciliationReport(results);
-        reportRepository.save(report);
+        try {
+            reportRepository.save(report);
+        } catch (Exception e) {
+            throw new ReportStorageException("Failed to save reconciliation report", e);
+        }
         logger.info("Reconciliation report saved");
 
         return report;
