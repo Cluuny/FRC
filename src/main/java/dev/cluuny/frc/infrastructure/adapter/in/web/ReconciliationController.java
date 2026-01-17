@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +30,14 @@ public class ReconciliationController {
     }
 
     @Operation(summary = "Process a bank statement", description = "Reconciles a list of bank statement lines against internal transactions.")
-    @ApiResponse(responseCode = "200", description = "Reconciliation report generated successfully",
-            content = @Content(mediaType = "application/json", schema = @Schema(implementation = ReconciliationReportDto.class)))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reconciliation report generated successfully",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ReconciliationReportDto.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data or empty statement",
+                    content = @Content),
+            @ApiResponse(responseCode = "500", description = "Internal server error processing reconciliation",
+                    content = @Content)
+    })
     @PostMapping("/process")
     public ResponseEntity<ReconciliationReportDto> processStatement(
             @Parameter(description = "Idempotency key to prevent duplicate processing", required = false)
