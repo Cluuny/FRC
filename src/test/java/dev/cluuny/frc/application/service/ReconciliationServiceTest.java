@@ -2,14 +2,12 @@ package dev.cluuny.frc.application.service;
 
 import dev.cluuny.frc.application.port.out.ReconciliationReportRepositoryPort;
 import dev.cluuny.frc.application.port.out.TransactionRepositoryPort;
-import dev.cluuny.frc.domain.model.BankStatementLine;
-import dev.cluuny.frc.domain.model.ReconciliationReport;
-import dev.cluuny.frc.domain.model.ReconciliationStatus;
-import dev.cluuny.frc.domain.model.Transaction;
+import dev.cluuny.frc.domain.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,8 +29,10 @@ class ReconciliationServiceTest {
                 Mockito.mock(TransactionRepositoryPort.class);
         reportRepository =
                 Mockito.mock(ReconciliationReportRepositoryPort.class);
+        ReconciliationPolicy reconciliationPolicy = Mockito.mock(ReconciliationPolicy.class);
 
         service = new ReconciliationService(
+                reconciliationPolicy,
                 transactionRepository,
                 reportRepository
         );

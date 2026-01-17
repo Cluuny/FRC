@@ -1,21 +1,18 @@
 package dev.cluuny.frc.domain.service;
 
-import dev.cluuny.frc.domain.model.BankStatementLine;
-import dev.cluuny.frc.domain.model.ReconciliationResult;
-import dev.cluuny.frc.domain.model.ReconciliationStatus;
-import dev.cluuny.frc.domain.model.Transaction;
+import dev.cluuny.frc.domain.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ReconciliationMatcherTest {
-
     private final ReconciliationMatcher matcher =
-            new ReconciliationMatcher(60, 2);
+            new ReconciliationMatcher(new ReconciliationPolicy(Duration.ofSeconds(60), 2, true, true));
 
     @Test
     void shouldReconcileExactMatch() {
