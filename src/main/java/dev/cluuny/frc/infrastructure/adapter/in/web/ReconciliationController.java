@@ -54,4 +54,9 @@ public class ReconciliationController {
         
         return ResponseEntity.ok(responseDto);
     }
+
+    @GetMapping("/hello")
+    public ResponseEntity<String> hello() {
+        return ResponseEntity.ok("Hello World!");
+    }
 }

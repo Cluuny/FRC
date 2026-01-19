@@ -15,15 +15,20 @@ import java.util.UUID;
 public class ReconciliationReportEntity {
     @Id
     private String id;
+    
+    @Column(unique = true)
+    private String signature;
+    
     private LocalDateTime processedAt;
     private String processedBy; // For audit
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "report")
     private List<ReconciliationResultEntity> results;
 
-    public ReconciliationReportEntity(String processedBy) {
+    public ReconciliationReportEntity(String processedBy, String signature) {
         this.id = UUID.randomUUID().toString();
         this.processedAt = LocalDateTime.now();
         this.processedBy = processedBy;
+        this.signature = signature;
     }
 }

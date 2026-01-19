@@ -7,13 +7,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +63,7 @@ class ReconciliationServiceTest {
         ArgumentCaptor<ReconciliationReport> captor =
                 ArgumentCaptor.forClass(ReconciliationReport.class);
 
-        verify(reportRepository).save(captor.capture());
+        verify(reportRepository).save(captor.capture(), anyString());
 
         assertEquals(
                 1,

@@ -12,7 +12,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ReconciliationService implements ReconcileStatementUseCase {
@@ -37,6 +46,13 @@ public class ReconciliationService implements ReconcileStatementUseCase {
             throw new EmptyStatementException("Bank statement lines cannot be null or empty");
         }
 
+        String signature = generateSignature(statementLines);
+        Optional<ReconciliationReport> existingReport = reportRepository.findBySignature(signature);
+        if (existingReport.isPresent()) {
+            logger.info("Returning existing reconciliation report for signature: {}", signature);
+            return existingReport.get();
+        }
+
         logger.info("Starting reconciliation for {} statement lines", statementLines.size());
         
         List<Transaction> internalTransactions = transactionRepository.findAll();
@@ -47,12 +63,30 @@ public class ReconciliationService implements ReconcileStatementUseCase {
         
         ReconciliationReport report = new ReconciliationReport(results);
         try {
-            reportRepository.save(report);
+            reportRepository.save(report, signature);
         } catch (Exception e) {
             throw new ReportStorageException("Failed to save reconciliation report", e);
         }
         logger.info("Reconciliation report saved");
 
         return report;
+    }
+
+    private String generateSignature(List<BankStatementLine> lines) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String content = lines.stream()
+                    .sorted(Comparator.comparing(BankStatementLine::getReferenceId, Comparator.nullsLast(String::compareTo))
+                            .thenComparing(BankStatementLine::getDate, Comparator.nullsLast(LocalDateTime::compareTo))
+                            .thenComparing(BankStatementLine::getAmount, Comparator.nullsLast(BigDecimal::compareTo)))
+                    .map(line -> String.valueOf(line.getReferenceId()) + "|" +
+                                 String.valueOf(line.getAmount()) + "|" +
+                                 String.valueOf(line.getDate()))
+                    .collect(Collectors.joining("||"));
+            byte[] hash = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Failed to generate signature", e);
+        }
     }
 }
